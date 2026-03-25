@@ -498,7 +498,7 @@ function Section({ emoji, title, items, variant, delay }) {
                 color, fontSize: 12, flexShrink: 0, marginTop: 2, fontWeight: 500
               }}>{mark}</span>
               <span style={{
-                fontSize: 18, color: 'var(--text-2)', lineHeight: 1.55
+                fontSize: 15, color: 'var(--text)', lineHeight: 1.55
               }}>{item}</span>
             </div>
           ))}
@@ -575,7 +575,7 @@ function App() {
 
   const handleNew = () => {
     const tg = window.Telegram?.WebApp;
-    if (tg) tg.close();
+    if (tg) tg.sendData(JSON.stringify({ action: 'new' }));
   };
 
   return (
