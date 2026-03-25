@@ -309,7 +309,8 @@ function loadData() {
     if (d) {
       // urlsafe base64 → standard base64
       const b64 = d.replace(/-/g, '+').replace(/_/g, '/');
-      const obj = JSON.parse(atob(b64));
+      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+      const obj = JSON.parse(new TextDecoder().decode(bytes));
       return {
         score:       obj.s   ?? 0,
         vacancy:     obj.v   ?? '',
@@ -441,7 +442,7 @@ function Gauge({ score }) {
           <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
           {label.text}
         </div>
-        <span style={{ fontSize: 16, color: '#000', fontWeight: 700, letterSpacing: '0.01em' }}>
+        <span style={{ fontSize: 16, color: 'var(--text)', fontWeight: 700, letterSpacing: '0.01em' }}>
           ATS совпадение с вакансией
         </span>
       </div>
