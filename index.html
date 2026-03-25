@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>ResumeAI</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* ── DARK THEME (default) ── */
+    :root {
+      --bg:           #09090E;
+      --surface:      #111218;
+      --surface-2:    #1A1C27;
+      --surface-3:    #22253A;
+      --accent:       #F0A500;
+      --accent-dim:   rgba(240, 165, 0, 0.14);
+      --accent-glow:  rgba(240, 165, 0, 0.25);
+      --green:        #10B981;
+      --green-bg:     rgba(16, 185, 129, 0.10);
+      --green-border: rgba(16, 185, 129, 0.22);
+      --red:          #F43F5E;
+      --red-bg:       rgba(244, 63, 94, 0.10);
+      --red-border:   rgba(244, 63, 94, 0.22);
+      --orange:       #FB923C;
+      --text:         #EDF0FA;
+      --text-2:       #7A8399;
+      --text-3:       #4A5068;
+      --border:       rgba(255, 255, 255, 0.055);
+      --border-2:     rgba(255, 255, 255, 0.10);
+      --shadow:       0 2px 20px rgba(0, 0, 0, 0.45);
+    }
+
+    /* ── LIGHT THEME ── */
+    [data-theme="light"] {
+      --bg:           #F0F2FA;
+      --surface:      #FFFFFF;
+      --surface-2:    #EBEEf8;
+      --surface-3:    #DFE3F2;
+      --accent:       #C98A00;
+      --accent-dim:   rgba(201, 138, 0, 0.12);
+      --accent-glow:  rgba(201, 138, 0, 0.20);
+      --green:        #059669;
+      --green-bg:     rgba(5, 150, 105, 0.08);
+      --green-border: rgba(5, 150, 105, 0.20);
+      --red:          #DC2626;
+      --red-bg:       rgba(220, 38, 38, 0.08);
+      --red-border:   rgba(220, 38, 38, 0.20);
+      --orange:       #D97706;
+      --text:         #0C0D14;
+      --text-2:       #616880;
+      --text-3:       #9BA3BC;
+      --border:       rgba(0, 0, 0, 0.07);
+      --border-2:     rgba(0, 0, 0, 0.13);
+      --shadow:       0 2px 16px rgba(0, 0, 0, 0.07);
+    }
+
+    html, body, #root {
+      height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Times New Roman', Times, serif;
+      -webkit-tap-highlight-color: transparent;
+      overflow-x: hidden;
+    }
+
+    .app {
+      min-height: 100vh;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-bottom: env(safe-area-inset-bottom, 24px);
+      -webkit-overflow-scrolling: touch;
+      scroll-behavior: smooth;
+    }
+
+    .app::-webkit-scrollbar { width: 0; }
+
+    /* ── BACKGROUND GRID ── */
+    .bg-grid {
+      position: fixed;
+      inset: 0;
+      pointer-events: none;
+      z-index: 0;
+      background-image:
+        linear-gradient(var(--border) 1px, transparent 1px),
+        linear-gradient(90deg, var(--border) 1px, transparent 1px);
+      background-size: 28px 28px;
+      mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 100%);
+    }
+
+    .bg-glow {
+      position: fixed;
+      top: -80px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 320px;
+      height: 280px;
+      background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    .content {
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── TYPOGRAPHY ── */
+    .font-mono { font-family: monospace; }
+
+    /* ── CARD ── */
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+    }
+
+    /* ── KEYWORD CHIPS ── */
+    .chip {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 7px;
+      font-family: monospace;
+      font-size: 14px;
+      font-weight: 400;
+      letter-spacing: 0.01em;
+    }
+
+    .chip-found {
+      background: var(--green-bg);
+      color: var(--green);
+      border: 1px solid var(--green-border);
+    }
+
+    .chip-missing {
+      background: var(--red-bg);
+      color: var(--red);
+      border: 1px solid var(--red-border);
+      text-decoration: line-through;
+      text-decoration-color: var(--red);
+      opacity: 0.75;
+    }
+
+    /* ── BUTTONS ── */
+    .btn-primary {
+      width: 100%;
+      padding: 16px 20px;
+      background: var(--green);
+      color: #fff;
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      border: none;
+      border-radius: 14px;
+      cursor: pointer;
+      transition: opacity 0.15s, transform 0.12s;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .btn-primary:active { transform: scale(0.97); opacity: 0.88; }
+
+    .btn-ghost {
+      width: 100%;
+      padding: 14px 20px;
+      background: transparent;
+      color: var(--text-2);
+      font-family: 'Times New Roman', Times, serif;
+      font-size: 17px;
+      font-weight: 600;
+      border: 1px solid var(--border-2);
+      border-radius: 14px;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, transform 0.12s;
+    }
+    .btn-ghost:hover  { background: var(--surface-2); color: var(--text); }
+    .btn-ghost:active { transform: scale(0.97); }
+
+    /* ── SCORE ARC ANIMATION ── */
+    .score-arc {
+      transition: stroke-dashoffset 1.5s cubic-bezier(0.22, 1, 0.36, 1);
+    }
+
+    /* ── STAGGERED FADE-UP ── */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(14px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up {
+      opacity: 0;
+      animation: fadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+    .d0  { animation-delay: 0ms; }
+    .d1  { animation-delay: 80ms; }
+    .d2  { animation-delay: 160ms; }
+    .d3  { animation-delay: 260ms; }
+    .d4  { animation-delay: 360ms; }
+    .d5  { animation-delay: 450ms; }
+    .d6  { animation-delay: 540ms; }
+    .d7  { animation-delay: 620ms; }
+
+    /* ── PULSE RING ── */
+    @keyframes pulseRing {
+      0%   { transform: scale(1);    opacity: 0.5; }
+      100% { transform: scale(1.12); opacity: 0; }
+    }
+
+    /* ── SECTION ICON ── */
+    .section-icon {
+      width: 30px;
+      height: 30px;
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      flex-shrink: 0;
+    }
+
+    /* ── SCORE PILL ── */
+    .score-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 4px 11px;
+      border-radius: 20px;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+    }
+
+    /* ── DIVIDER ── */
+    .divider {
+      height: 1px;
+      background: var(--border);
+      margin: 0 16px;
+    }
+
+    /* ── LOGO ── */
+    .logo-box {
+      width: 32px;
+      height: 32px;
+      background: var(--accent);
+      border-radius: 9px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: monospace;
+      font-size: 11px;
+      font-weight: 500;
+      color: #000;
+      letter-spacing: -0.04em;
+      flex-shrink: 0;
+    }
+
+    /* ── RESPONSIVE ── */
+    .vacancy-block { padding-top: 56px; }
+
+    @media (min-width: 520px) {
+      .vacancy-block { padding-top: 12px; }
+    }
+
+    @media (max-width: 380px) {
+      .gauge-wrap { transform: scale(0.82); transform-origin: center top; }
+    }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ─── MOCK DATA ──────────────────────────────────────────────────────────── */
+/* В проде данные передаются через Telegram.WebApp.initDataUnsafe или query params */
+const MOCK = {
+  score: 78,
+  vacancy: "Senior Frontend Developer",
+  company: "Яндекс",
+  salary: "250 000 — 320 000 ₽",
+  strongPoints: [
+    "5+ лет опыта с React и TypeScript — полное совпадение со стеком",
+    "Знание современных паттернов: hooks, context API, suspense",
+    "Опыт с unit/integration тестированием (Jest, React Testing Library)",
+    "Участие в open-source: повышает доверие рекрутёра"
+  ],
+  weakPoints: [
+    "Next.js не упомянут — явно требуется в описании вакансии",
+    "Нет цифровых метрик: добавь % улучшения производительности, охваты",
+    "GraphQL отсутствует в разделе навыков"
+  ],
+  keywords: {
+    found:   ["React", "TypeScript", "Redux", "CSS-in-JS", "Jest", "Git", "Agile", "REST API"],
+    missing: ["Next.js", "GraphQL", "Storybook", "Figma", "CI/CD"]
+  }
+};
+
+/* ─── DATA LOADING ───────────────────────────────────────────────────────── */
+function loadData() {
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get('d');
+    if (d) {
+      // urlsafe base64 → standard base64
+      const b64 = d.replace(/-/g, '+').replace(/_/g, '/');
+      const obj = JSON.parse(atob(b64));
+      return {
+        score:       obj.s   ?? 0,
+        vacancy:     obj.v   ?? '',
+        company:     obj.c   ?? '',
+        salary:      obj.sal ?? '',
+        strongPoints: obj.sp ?? [],
+        weakPoints:  obj.wp  ?? [],
+        keywords: {
+          found:   obj.kf ?? [],
+          missing: obj.km ?? [],
+        },
+      };
+    }
+  } catch (e) {
+    console.warn('ResumeAI: failed to parse ?d= param', e);
+  }
+  return MOCK;
+}
+
+/* ─── HOOKS ──────────────────────────────────────────────────────────────── */
+function useCountUp(target, duration = 1300, delay = 450) {
+  const [val, setVal] = useState(0);
+  useEffect(() => {
+    let raf;
+    const t = setTimeout(() => {
+      let start = null;
+      const tick = (ts) => {
+        if (!start) start = ts;
+        const p = Math.min((ts - start) / duration, 1);
+        const ease = 1 - Math.pow(1 - p, 4);
+        setVal(Math.round(ease * target));
+        if (p < 1) raf = requestAnimationFrame(tick);
+      };
+      raf = requestAnimationFrame(tick);
+    }, delay);
+    return () => { clearTimeout(t); cancelAnimationFrame(raf); };
+  }, [target]);
+  return val;
+}
+
+/* ─── SCORE COLOR ────────────────────────────────────────────────────────── */
+function scoreColor(s) {
+  if (s >= 75) return 'var(--green)';
+  if (s >= 60) return 'var(--accent)';
+  return 'var(--red)';
+}
+
+function scoreLabel(s) {
+  if (s >= 75) return { text: 'Пройдёт',       dot: 'var(--green)' };
+  if (s >= 60) return { text: 'Под вопросом',   dot: 'var(--accent)' };
+  return            { text: 'Не пройдёт',    dot: 'var(--red)' };
+}
+
+/* ─── GAUGE ──────────────────────────────────────────────────────────────── */
+function Gauge({ score }) {
+  const [ready, setReady] = useState(false);
+  const displayed = useCountUp(score);
+  const R = 96, C = 2 * Math.PI * R;
+  const color = scoreColor(score);
+  const label = scoreLabel(score);
+
+  useEffect(() => { const t = setTimeout(() => setReady(true), 180); return () => clearTimeout(t); }, []);
+
+  const offset = ready ? C * (1 - score / 100) : C;
+
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '4px 0 8px', position: 'relative' }}>
+      {/* radial glow beneath gauge */}
+      <div style={{
+        position: 'absolute', bottom: 0, left: '50%', transform: 'translateX(-50%)',
+        width: 200, height: 100,
+        background: `radial-gradient(ellipse, ${color}22 0%, transparent 70%)`,
+        pointerEvents: 'none'
+      }} />
+
+      <div style={{ position: 'relative', width: 240, height: 240 }}>
+        {/* pulse ring */}
+        {ready && (
+          <div style={{
+            position: 'absolute', inset: 14, borderRadius: '50%',
+            border: `1.5px solid ${color}`,
+            animation: 'pulseRing 2.8s ease-out infinite',
+          }} />
+        )}
+
+        <svg width="240" height="240" viewBox="0 0 240 240"
+             style={{ transform: 'rotate(-90deg)', display: 'block' }}>
+          {/* background track */}
+          <circle cx="120" cy="120" r={R} fill="none"
+            stroke="var(--surface-3)" strokeWidth="11" />
+          {/* score arc */}
+          <circle cx="120" cy="120" r={R} fill="none"
+            stroke={color} strokeWidth="11"
+            strokeLinecap="round"
+            strokeDasharray={C}
+            strokeDashoffset={offset}
+            className="score-arc"
+            style={{
+              filter: `drop-shadow(0 0 7px ${color}88)`,
+              transition: ready ? undefined : 'none'
+            }}
+          />
+        </svg>
+
+        {/* center text */}
+        <div style={{
+          position: 'absolute', inset: 0,
+          display: 'flex', flexDirection: 'column',
+          alignItems: 'center', justifyContent: 'center',
+          gap: 2
+        }}>
+          <span className="font-mono" style={{
+            fontSize: 68, fontWeight: 500, color, lineHeight: 1,
+            letterSpacing: '-0.04em'
+          }}>{displayed}</span>
+          <span className="font-mono" style={{
+            fontSize: 15, color: 'var(--text-3)', letterSpacing: '0.05em'
+          }}>/ 100</span>
+        </div>
+      </div>
+
+      {/* grade + label */}
+      <div style={{ marginTop: 6, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3 }}>
+        <div className="score-pill" style={{
+          background: `${color}18`,
+          border: `1px solid ${color}44`,
+          color, fontSize: 15, padding: '5px 14px'
+        }}>
+          <span style={{ width: 8, height: 8, borderRadius: '50%', background: color, display: 'inline-block' }} />
+          {label.text}
+        </div>
+        <span style={{ fontSize: 16, color: '#000', fontWeight: 700, letterSpacing: '0.01em' }}>
+          ATS совпадение с вакансией
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/* ─── COLLAPSIBLE SECTION ────────────────────────────────────────────────── */
+function Section({ emoji, title, items, variant, delay }) {
+  const [open, setOpen] = useState(true);
+  const isGood = variant === 'good';
+  const color  = isGood ? 'var(--green)' : 'var(--red)';
+  const iconBg = isGood ? 'var(--green-bg)' : 'var(--red-bg)';
+  const mark   = isGood ? '✓' : '✗';
+
+  return (
+    <div className={`card fade-up d${delay}`} style={{ margin: '0 14px' }}>
+      <button
+        onClick={() => setOpen(o => !o)}
+        style={{
+          width: '100%', padding: '14px 14px 14px 14px',
+          background: 'none', border: 'none', cursor: 'pointer',
+          display: 'flex', alignItems: 'center', gap: 10,
+          color: 'var(--text)', fontFamily: 'Syne, sans-serif',
+          textAlign: 'left'
+        }}
+      >
+        <div className="section-icon" style={{ background: iconBg }}>
+          <span style={{ fontSize: 14 }}>{emoji}</span>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em', flex: 1 }}>
+          {title}
+        </span>
+        <span className="font-mono" style={{
+          fontSize: 11, color: 'var(--text-3)',
+          background: 'var(--surface-2)', padding: '2px 8px',
+          borderRadius: 5, marginRight: 6
+        }}>{items.length}</span>
+        <span style={{
+          fontSize: 10, color: 'var(--text-3)',
+          transform: open ? 'rotate(0deg)' : 'rotate(-90deg)',
+          transition: 'transform 0.2s',
+          display: 'inline-block'
+        }}>▼</span>
+      </button>
+
+      {open && (
+        <div style={{ padding: '0 14px 14px', display: 'flex', flexDirection: 'column', gap: 9 }}>
+          <div style={{ height: 1, background: 'var(--border)', marginBottom: 4 }} />
+          {items.map((item, i) => (
+            <div key={i} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+              <span className="font-mono" style={{
+                color, fontSize: 12, flexShrink: 0, marginTop: 2, fontWeight: 500
+              }}>{mark}</span>
+              <span style={{
+                fontSize: 18, color: 'var(--text-2)', lineHeight: 1.55
+              }}>{item}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+/* ─── KEYWORDS ───────────────────────────────────────────────────────────── */
+function Keywords({ found, missing, delay }) {
+  return (
+    <div className={`card fade-up d${delay}`} style={{ margin: '0 14px', padding: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <div className="section-icon" style={{ background: 'var(--surface-2)' }}>
+          <span style={{ fontSize: 14 }}>⌗</span>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          Ключевые слова
+        </span>
+        <span className="font-mono" style={{
+          marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)',
+          background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 5
+        }}>{found.length}/{found.length + missing.length}</span>
+      </div>
+
+      <div style={{ marginBottom: 14 }}>
+        <p className="font-mono" style={{
+          fontSize: 10.5, color: 'var(--green)', textTransform: 'uppercase',
+          letterSpacing: '0.08em', marginBottom: 8
+        }}>найдено · {found.length}</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {found.map((kw, i) => <span key={i} className="chip chip-found">{kw}</span>)}
+        </div>
+      </div>
+
+      <div style={{ height: 1, background: 'var(--border)', margin: '0 -14px 14px' }} />
+
+      <div>
+        <p className="font-mono" style={{
+          fontSize: 10.5, color: 'var(--red)', textTransform: 'uppercase',
+          letterSpacing: '0.08em', marginBottom: 8
+        }}>отсутствует · {missing.length}</p>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+          {missing.map((kw, i) => <span key={i} className="chip chip-missing">{kw}</span>)}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ─── APP ────────────────────────────────────────────────────────────────── */
+function App() {
+  const [theme, setTheme] = useState('dark');
+  const data = React.useMemo(() => loadData(), []);
+
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+      const scheme = tg.colorScheme || 'dark';
+      setTheme(scheme);
+      document.documentElement.setAttribute('data-theme', scheme);
+    }
+  }, []);
+
+  const handleRewrite = () => {
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.sendData(JSON.stringify({ action: 'rewrite' }));
+    }
+  };
+
+  const handleNew = () => {
+    const tg = window.Telegram?.WebApp;
+    if (tg) tg.close();
+  };
+
+  return (
+    <div className="app">
+      <div className="bg-grid" />
+      <div className="bg-glow" />
+
+      <div className="content">
+
+        {/* ── TOP ROW ── */}
+        <div className="fade-up d0" style={{
+          position: 'relative', padding: '18px 16px 0'
+        }}>
+          {/* Logo — абсолютно слева */}
+          <div style={{
+            position: 'absolute', top: 18, left: 16,
+            display: 'flex', alignItems: 'center', gap: 8
+          }}>
+            <div className="logo-box">r·ai</div>
+            <span style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em' }}>
+              Resume<span style={{ color: 'var(--accent)' }}>AI</span>
+            </span>
+          </div>
+
+          {/* Vacancy + gauge — по центру страницы */}
+          <div className="fade-up d1 vacancy-block" style={{
+            display: 'flex', flexDirection: 'column', alignItems: 'center'
+          }}>
+            <h1 style={{
+              fontSize: 28, fontWeight: 800, letterSpacing: '-0.035em',
+              lineHeight: 1.2, textAlign: 'center', margin: 0
+            }}>{data.vacancy}</h1>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
+              {data.company && (
+                <span style={{ fontSize: 20, color: 'var(--text-2)', fontWeight: 600 }}>{data.company}</span>
+              )}
+              {data.company && data.salary && (
+                <span style={{ color: 'var(--border-2)', fontSize: 18 }}>·</span>
+              )}
+              {data.salary && (
+                <span style={{ fontSize: 20, color: 'var(--green)', fontWeight: 700 }}>{data.salary}</span>
+              )}
+            </div>
+            <div className="fade-up d2 gauge-wrap">
+              <Gauge score={data.score} />
+            </div>
+          </div>
+        </div>
+
+        {/* ── SECTIONS ── */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+          <Section
+            emoji="✦" title="Сильные стороны"
+            items={data.strongPoints} variant="good" delay={3}
+          />
+          <Section
+            emoji="△" title="Слабые стороны"
+            items={data.weakPoints} variant="bad" delay={4}
+          />
+          <Keywords
+            found={data.keywords.found}
+            missing={data.keywords.missing}
+            delay={5}
+          />
+        </div>
+
+        {/* ── CTA ── */}
+        <div className="fade-up d6" style={{
+          padding: '20px 14px 8px',
+          display: 'flex', flexDirection: 'column', gap: 10
+        }}>
+          <button className="btn-primary" onClick={handleRewrite}>
+            Переписать резюме →
+          </button>
+          <button className="btn-ghost" onClick={handleNew}>
+            Новый анализ
+          </button>
+        </div>
+
+        {/* ── FOOTER ── */}
+        <div className="fade-up d7" style={{
+          textAlign: 'center', padding: '12px 16px 8px'
+        }}>
+          <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-3)', letterSpacing: '0.06em' }}>
+            RESUMEAI · ATS ANALYSIS
+          </span>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
