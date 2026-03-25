@@ -309,35 +309,59 @@ const MOCK = {
 };
 
 /* ─── DATA LOADING ───────────────────────────────────────────────────────── */
+function decodeParam(raw) {
+  const b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
+  const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
+  return JSON.parse(new TextDecoder().decode(bytes));
+}
+
 function loadData() {
   try {
     const params = new URLSearchParams(window.location.search);
+    const c = params.get('c');
+    if (c) {
+      const obj = decodeParam(c);
+      // compare mode: return both before and after
+      return {
+        mode: 'compare',
+        before: {
+          score:    obj.bs  ?? 0,
+          coverage: obj.bc  ?? 0,
+          keywords: { found: obj.bkf ?? [], missing: obj.bkm ?? [] },
+        },
+        after: {
+          score:               obj.s   ?? 0,
+          coverage:            obj.cov ?? 0,
+          strongPoints:        obj.sp  ?? [],
+          weakPoints:          obj.wp  ?? [],
+          keywords:            { found: obj.kf ?? [], missing: obj.km ?? [] },
+          rejectionReasons:    obj.rr  ?? [],
+          criticalGaps:        obj.cg  ?? [],
+          improvementPriority: obj.ip  ?? [],
+        },
+      };
+    }
     const d = params.get('d');
     if (d) {
-      // urlsafe base64 → standard base64
-      const b64 = d.replace(/-/g, '+').replace(/_/g, '/');
-      const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
-      const obj = JSON.parse(new TextDecoder().decode(bytes));
+      const obj = decodeParam(d);
       return {
-        score:            obj.s   ?? 0,
-        vacancy:          obj.v   ?? '',
-        company:          obj.c   ?? '',
-        salary:           obj.sal ?? '',
-        strongPoints:     obj.sp  ?? [],
-        weakPoints:       obj.wp  ?? [],
-        keywords: {
-          found:   obj.kf ?? [],
-          missing: obj.km ?? [],
-        },
-        rejectionReasons:    obj.rr ?? [],
-        criticalGaps:        obj.cg ?? [],
-        improvementPriority: obj.ip ?? [],
+        mode:                'report',
+        score:               obj.s   ?? 0,
+        vacancy:             obj.v   ?? '',
+        company:             obj.c   ?? '',
+        salary:              obj.sal ?? '',
+        strongPoints:        obj.sp  ?? [],
+        weakPoints:          obj.wp  ?? [],
+        keywords:            { found: obj.kf ?? [], missing: obj.km ?? [] },
+        rejectionReasons:    obj.rr  ?? [],
+        criticalGaps:        obj.cg  ?? [],
+        improvementPriority: obj.ip  ?? [],
       };
     }
   } catch (e) {
-    console.warn('ResumeAI: failed to parse ?d= param', e);
+    console.warn('ResumeAI: failed to parse params', e);
   }
-  return MOCK;
+  return { mode: 'report', ...MOCK };
 }
 
 /* ─── HOOKS ──────────────────────────────────────────────────────────────── */
@@ -633,10 +657,196 @@ function Priority({ items, delay }) {
   );
 }
 
+/* ─── COMPARE VIEW ───────────────────────────────────────────────────────── */
+function ScoreBox({ score, label, sub }) {
+  const displayed = useCountUp(score);
+  const color = scoreColor(score);
+  const verdict = scoreLabel(score);
+  return (
+    <div style={{
+      flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center',
+      padding: '18px 10px', background: 'var(--surface-2)', borderRadius: 14,
+      border: `1px solid ${color}33`,
+    }}>
+      <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'monospace',
+        textTransform: 'uppercase', letterSpacing: '0.07em', marginBottom: 8 }}>{label}</span>
+      <span className="font-mono" style={{ fontSize: 56, fontWeight: 500, color, lineHeight: 1, letterSpacing: '-0.04em' }}>
+        {displayed}
+      </span>
+      <span style={{ fontSize: 12, color: 'var(--text-3)', fontFamily: 'monospace' }}>/100</span>
+      <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 5,
+        background: `${color}18`, border: `1px solid ${color}44`,
+        borderRadius: 20, padding: '4px 10px' }}>
+        <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, display: 'inline-block' }} />
+        <span style={{ fontSize: 12, color, fontFamily: 'monospace', letterSpacing: '0.04em' }}>{verdict.text}</span>
+      </div>
+      {sub !== undefined && (
+        <span style={{ fontSize: 11, color: 'var(--text-3)', marginTop: 6 }}>coverage {sub}%</span>
+      )}
+    </div>
+  );
+}
+
+function CoverageBar({ before, after }) {
+  const [ready, setReady] = useState(false);
+  useEffect(() => { const t = setTimeout(() => setReady(true), 300); return () => clearTimeout(t); }, []);
+  return (
+    <div style={{ padding: '14px', background: 'var(--surface)', borderRadius: 14, border: '1px solid var(--border)' }}>
+      <span style={{ fontSize: 12, color: 'var(--text-2)', fontFamily: 'monospace',
+        textTransform: 'uppercase', letterSpacing: '0.07em' }}>Keyword coverage</span>
+      <div style={{ marginTop: 12, display: 'flex', flexDirection: 'column', gap: 8 }}>
+        {[{label: 'До', val: before, color: 'var(--red)'}, {label: 'После', val: after, color: 'var(--green)'}].map(({label, val, color}) => (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 11, color: 'var(--text-3)', fontFamily: 'monospace', width: 34, textAlign: 'right' }}>{label}</span>
+            <div style={{ flex: 1, height: 8, background: 'var(--surface-3)', borderRadius: 4, overflow: 'hidden' }}>
+              <div style={{
+                height: '100%', borderRadius: 4, background: color,
+                width: ready ? `${val}%` : '0%',
+                transition: 'width 1.2s cubic-bezier(0.22, 1, 0.36, 1)',
+                boxShadow: `0 0 6px ${color}88`,
+              }} />
+            </div>
+            <span className="font-mono" style={{ fontSize: 12, color, width: 34 }}>{val}%</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function KeywordDiff({ before, after }) {
+  const added   = after.found.filter(k => before.missing.map(m => m.toLowerCase()).includes(k.toLowerCase()));
+  const stillMissing = after.missing;
+  return (
+    <div style={{ background: 'var(--surface)', borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden' }}>
+      <div style={{ padding: '14px 14px 10px', display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div className="section-icon" style={{ background: 'var(--surface-2)' }}>
+          <span style={{ fontSize: 14 }}>⌗</span>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>Ключевые слова</span>
+        <span className="font-mono" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)',
+          background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 5 }}>
+          +{added.length} добавлено
+        </span>
+      </div>
+      {added.length > 0 && (
+        <div style={{ padding: '0 14px 14px' }}>
+          <p className="font-mono" style={{ fontSize: 10.5, color: 'var(--green)', textTransform: 'uppercase',
+            letterSpacing: '0.08em', marginBottom: 8 }}>добавлено · {added.length}</p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {added.map((kw, i) => (
+              <span key={i} className="chip chip-found" style={{ border: '1px solid var(--green)' }}>+{kw}</span>
+            ))}
+          </div>
+        </div>
+      )}
+      {stillMissing.length > 0 && (
+        <>
+          <div style={{ height: 1, background: 'var(--border)', margin: '0 14px' }} />
+          <div style={{ padding: '14px' }}>
+            <p className="font-mono" style={{ fontSize: 10.5, color: 'var(--red)', textTransform: 'uppercase',
+              letterSpacing: '0.08em', marginBottom: 8 }}>всё ещё нет · {stillMissing.length}</p>
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+              {stillMissing.map((kw, i) => <span key={i} className="chip chip-missing">{kw}</span>)}
+            </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+function CompareView({ data }) {
+  const { before, after } = data;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 12, padding: '0 14px' }}>
+      {/* Score boxes */}
+      <div className="fade-up d1" style={{ display: 'flex', gap: 10 }}>
+        <ScoreBox score={before.score} label="До" sub={before.coverage} />
+        <div style={{ display: 'flex', alignItems: 'center', fontSize: 22, color: 'var(--accent)', fontWeight: 700 }}>→</div>
+        <ScoreBox score={after.score}  label="После" sub={after.coverage} />
+      </div>
+      {/* Coverage bars */}
+      <div className="fade-up d2">
+        <CoverageBar before={before.coverage} after={after.coverage} />
+      </div>
+      {/* Keyword diff */}
+      <div className="fade-up d3">
+        <KeywordDiff before={before.keywords} after={after.keywords} />
+      </div>
+      {/* Still missing priority */}
+      {after.improvementPriority.length > 0 && (
+        <div className="fade-up d4">
+          <Priority items={after.improvementPriority} delay={0} />
+        </div>
+      )}
+    </div>
+  );
+}
+
 /* ─── APP ────────────────────────────────────────────────────────────────── */
+function Tabs({ active, onChange, tabs }) {
+  return (
+    <div style={{
+      display: 'flex', gap: 6, padding: '0 14px',
+      background: 'var(--surface)', borderBottom: '1px solid var(--border)',
+      position: 'sticky', top: 0, zIndex: 10,
+    }}>
+      {tabs.map(t => (
+        <button key={t.id} onClick={() => onChange(t.id)} style={{
+          padding: '12px 14px', background: 'none', border: 'none', cursor: 'pointer',
+          fontSize: 13, fontWeight: 700, letterSpacing: '-0.01em',
+          color: active === t.id ? 'var(--accent)' : 'var(--text-3)',
+          borderBottom: active === t.id ? '2px solid var(--accent)' : '2px solid transparent',
+          transition: 'color 0.15s, border-color 0.15s',
+          fontFamily: 'inherit',
+        }}>{t.label}</button>
+      ))}
+    </div>
+  );
+}
+
+function ReportView({ data, onRewrite, onNew }) {
+  const d = data.mode === 'compare' ? data.after : data;
+  return (
+    <>
+      {/* Score gauge */}
+      <div className="fade-up d1" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', padding: '12px 16px 0' }}>
+        <div className="fade-up d2 gauge-wrap">
+          <Gauge score={d.score} />
+        </div>
+      </div>
+
+      {/* Sections */}
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+        <RejectionBlock reasons={d.rejectionReasons} criticalGaps={d.criticalGaps} delay={3} />
+        <Priority items={d.improvementPriority} delay={4} />
+        <Section emoji="✦" title="Сильные стороны" items={d.strongPoints} variant="good" delay={5} />
+        <Section emoji="△" title="Слабые стороны"  items={d.weakPoints}  variant="bad"  delay={6} />
+        <Keywords found={d.keywords.found} missing={d.keywords.missing} delay={7} />
+      </div>
+
+      {/* CTA */}
+      {data.mode !== 'compare' && (
+        <div className="fade-up d6" style={{ padding: '20px 14px 8px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <button className="btn-primary" onClick={onRewrite}>Переписать резюме →</button>
+          <button className="btn-ghost"   onClick={onNew}>Новый анализ</button>
+        </div>
+      )}
+      {data.mode === 'compare' && (
+        <div className="fade-up d6" style={{ padding: '20px 14px 8px' }}>
+          <button className="btn-ghost" onClick={onNew}>Новый анализ</button>
+        </div>
+      )}
+    </>
+  );
+}
+
 function App() {
   const [theme, setTheme] = useState('dark');
+  const [tab,   setTab]   = useState('compare');
   const data = React.useMemo(() => loadData(), []);
+  const isCompare = data.mode === 'compare';
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp;
@@ -647,15 +857,14 @@ function App() {
       setTheme(scheme);
       document.documentElement.setAttribute('data-theme', scheme);
     }
+    // Default tab: compare if compare mode, else report
+    if (!isCompare) setTab('report');
   }, []);
 
   const handleRewrite = () => {
     const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.sendData(JSON.stringify({ action: 'rewrite' }));
-    }
+    if (tg) tg.sendData(JSON.stringify({ action: 'rewrite' }));
   };
-
   const handleNew = () => {
     const tg = window.Telegram?.WebApp;
     if (tg) tg.sendData(JSON.stringify({ action: 'new' }));
@@ -668,86 +877,43 @@ function App() {
 
       <div className="content">
 
-        {/* ── TOP ROW ── */}
-        <div className="fade-up d0" style={{
-          position: 'relative', padding: '18px 16px 0'
-        }}>
-          {/* Logo — абсолютно слева */}
-          <div style={{
-            position: 'absolute', top: 18, left: 16,
-            display: 'flex', alignItems: 'center', gap: 8
-          }}>
-            <div className="logo-box">r·ai</div>
-            <span style={{ fontSize: 28, fontWeight: 700, letterSpacing: '-0.03em' }}>
-              Resume<span style={{ color: 'var(--accent)' }}>AI</span>
-            </span>
-          </div>
-
-          {/* Vacancy + gauge — по центру страницы */}
-          <div className="fade-up d1 vacancy-block" style={{
-            display: 'flex', flexDirection: 'column', alignItems: 'center'
-          }}>
-            <h1 style={{
-              fontSize: 28, fontWeight: 800, letterSpacing: '-0.035em',
-              lineHeight: 1.2, textAlign: 'center', margin: 0
-            }}>{data.vacancy}</h1>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 6, flexWrap: 'wrap' }}>
-              {data.company && (
-                <span style={{ fontSize: 20, color: 'var(--text-2)', fontWeight: 600 }}>{data.company}</span>
-              )}
-              {data.company && data.salary && (
-                <span style={{ color: 'var(--border-2)', fontSize: 18 }}>·</span>
-              )}
-              {data.salary && (
-                <span style={{ fontSize: 20, color: 'var(--green)', fontWeight: 700 }}>{data.salary}</span>
-              )}
-            </div>
-            <div className="fade-up d2 gauge-wrap">
-              <Gauge score={data.score} />
-            </div>
-          </div>
+        {/* ── HEADER ── */}
+        <div className="fade-up d0" style={{ padding: '16px 16px 10px', display: 'flex', alignItems: 'center', gap: 8 }}>
+          <div className="logo-box">r·ai</div>
+          <span style={{ fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em' }}>
+            Resume<span style={{ color: 'var(--accent)' }}>AI</span>
+          </span>
+          {isCompare && (
+            <span className="font-mono" style={{
+              marginLeft: 'auto', fontSize: 10, color: 'var(--green)',
+              background: 'var(--green-bg)', border: '1px solid var(--green-border)',
+              padding: '3px 8px', borderRadius: 6, letterSpacing: '0.06em'
+            }}>REWRITTEN</span>
+          )}
         </div>
 
-        {/* ── SECTIONS ── */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-          <RejectionBlock
-            reasons={data.rejectionReasons}
-            criticalGaps={data.criticalGaps}
-            delay={3}
+        {/* ── TABS (only in compare mode) ── */}
+        {isCompare && (
+          <Tabs
+            active={tab}
+            onChange={setTab}
+            tabs={[
+              { id: 'compare', label: 'Сравнение' },
+              { id: 'report',  label: 'Полный отчёт' },
+            ]}
           />
-          <Priority items={data.improvementPriority} delay={4} />
-          <Section
-            emoji="✦" title="Сильные стороны"
-            items={data.strongPoints} variant="good" delay={5}
-          />
-          <Section
-            emoji="△" title="Слабые стороны"
-            items={data.weakPoints} variant="bad" delay={6}
-          />
-          <Keywords
-            found={data.keywords.found}
-            missing={data.keywords.missing}
-            delay={7}
-          />
-        </div>
+        )}
 
-        {/* ── CTA ── */}
-        <div className="fade-up d6" style={{
-          padding: '20px 14px 8px',
-          display: 'flex', flexDirection: 'column', gap: 10
-        }}>
-          <button className="btn-primary" onClick={handleRewrite}>
-            Переписать резюме →
-          </button>
-          <button className="btn-ghost" onClick={handleNew}>
-            Новый анализ
-          </button>
+        {/* ── CONTENT ── */}
+        <div style={{ paddingTop: 10 }}>
+          {isCompare && tab === 'compare' && <CompareView data={data} />}
+          {(!isCompare || tab === 'report') && (
+            <ReportView data={data} onRewrite={handleRewrite} onNew={handleNew} />
+          )}
         </div>
 
         {/* ── FOOTER ── */}
-        <div className="fade-up d7" style={{
-          textAlign: 'center', padding: '12px 16px 8px'
-        }}>
+        <div className="fade-up d7" style={{ textAlign: 'center', padding: '12px 16px 8px' }}>
           <span className="font-mono" style={{ fontSize: 10, color: 'var(--text-2)', letterSpacing: '0.06em' }}>
             RESUMEAI · ATS ANALYSIS
           </span>
