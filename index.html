@@ -280,32 +280,39 @@ const { useState, useEffect, useRef } = React;
 /* ─── MOCK DATA ──────────────────────────────────────────────────────────── */
 /* В проде данные передаются через Telegram.WebApp.initDataUnsafe или query params */
 const MOCK = {
-  score: 78,
-  vacancy: "Senior Frontend Developer",
-  company: "Яндекс",
-  salary: "250 000 — 320 000 ₽",
-  strongPoints: [
-    "5+ лет опыта с React и TypeScript — полное совпадение со стеком",
-    "Знание современных паттернов: hooks, context API, suspense",
-    "Опыт с unit/integration тестированием (Jest, React Testing Library)",
-    "Участие в open-source: повышает доверие рекрутёра"
-  ],
-  weakPoints: [
-    "Next.js не упомянут — явно требуется в описании вакансии",
-    "Нет цифровых метрик: добавь % улучшения производительности, охваты",
-    "GraphQL отсутствует в разделе навыков"
-  ],
-  keywords: {
-    found:   ["React", "TypeScript", "Redux", "CSS-in-JS", "Jest", "Git", "Agile", "REST API"],
-    missing: ["Next.js", "GraphQL", "Storybook", "Figma", "CI/CD"]
+  mode: 'compare',
+  before: {
+    score: 54,
+    coverage: 38,
+    keywords: {
+      found:   ["React", "TypeScript", "Git", "REST API"],
+      missing: ["Next.js", "GraphQL", "Storybook", "CI/CD", "Docker", "Figma"],
+    },
   },
-  rejectionReasons: ["Next.js отсутствует в резюме", "Нет измеримых результатов"],
-  criticalGaps:     ["Next.js", "GraphQL", "CI/CD"],
-  improvementPriority: [
-    "Добавить Next.js в раздел Навыки",
-    "Добавить метрики: %, числа, рост",
-    "Расширить список инструментов"
-  ],
+  after: {
+    score: 88,
+    coverage: 81,
+    strongPoints: [
+      "5+ лет опыта с React и TypeScript — полное совпадение со стеком",
+      "Добавлены Next.js и GraphQL — покрывают must-have вакансии",
+      "Метрики: рост производительности на 40%, снижение bundle size на 30%",
+      "CI/CD и Docker теперь явно указаны в Навыках",
+    ],
+    weakPoints: [
+      "Figma не упомянута — желательно добавить",
+      "Storybook отсутствует в разделе навыков",
+    ],
+    keywords: {
+      found:   ["React", "TypeScript", "Next.js", "GraphQL", "CI/CD", "Docker", "Git", "REST API", "Agile"],
+      missing: ["Storybook", "Figma"],
+    },
+    rejectionReasons: [],
+    criticalGaps:     [],
+    improvementPriority: [
+      "Добавить Figma в раздел Навыки",
+      "Добавить Storybook если есть опыт",
+    ],
+  },
 };
 
 /* ─── DATA LOADING ───────────────────────────────────────────────────────── */
