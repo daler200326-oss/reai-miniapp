@@ -298,7 +298,14 @@ const MOCK = {
   keywords: {
     found:   ["React", "TypeScript", "Redux", "CSS-in-JS", "Jest", "Git", "Agile", "REST API"],
     missing: ["Next.js", "GraphQL", "Storybook", "Figma", "CI/CD"]
-  }
+  },
+  rejectionReasons: ["Next.js отсутствует в резюме", "Нет измеримых результатов"],
+  criticalGaps:     ["Next.js", "GraphQL", "CI/CD"],
+  improvementPriority: [
+    "Добавить Next.js в раздел Навыки",
+    "Добавить метрики: %, числа, рост",
+    "Расширить список инструментов"
+  ],
 };
 
 /* ─── DATA LOADING ───────────────────────────────────────────────────────── */
@@ -312,16 +319,19 @@ function loadData() {
       const bytes = Uint8Array.from(atob(b64), c => c.charCodeAt(0));
       const obj = JSON.parse(new TextDecoder().decode(bytes));
       return {
-        score:       obj.s   ?? 0,
-        vacancy:     obj.v   ?? '',
-        company:     obj.c   ?? '',
-        salary:      obj.sal ?? '',
-        strongPoints: obj.sp ?? [],
-        weakPoints:  obj.wp  ?? [],
+        score:            obj.s   ?? 0,
+        vacancy:          obj.v   ?? '',
+        company:          obj.c   ?? '',
+        salary:           obj.sal ?? '',
+        strongPoints:     obj.sp  ?? [],
+        weakPoints:       obj.wp  ?? [],
         keywords: {
           found:   obj.kf ?? [],
           missing: obj.km ?? [],
         },
+        rejectionReasons:    obj.rr ?? [],
+        criticalGaps:        obj.cg ?? [],
+        improvementPriority: obj.ip ?? [],
       };
     }
   } catch (e) {
@@ -550,6 +560,79 @@ function Keywords({ found, missing, delay }) {
   );
 }
 
+/* ─── REJECTION BLOCK ────────────────────────────────────────────────────── */
+function RejectionBlock({ reasons, criticalGaps, delay }) {
+  if (!reasons.length && !criticalGaps.length) return null;
+  return (
+    <div className={`card fade-up d${delay}`} style={{ margin: '0 14px', padding: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div className="section-icon" style={{ background: 'var(--red-bg)' }}>
+          <span style={{ fontSize: 14 }}>✗</span>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          Причины отказа
+        </span>
+      </div>
+      {reasons.length > 0 && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 7, marginBottom: criticalGaps.length ? 12 : 0 }}>
+          {reasons.map((r, i) => (
+            <div key={i} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+              <span className="font-mono" style={{ color: 'var(--red)', fontSize: 12, flexShrink: 0, marginTop: 2 }}>✗</span>
+              <span style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.55 }}>{r}</span>
+            </div>
+          ))}
+        </div>
+      )}
+      {criticalGaps.length > 0 && (
+        <>
+          <div style={{ height: 1, background: 'var(--border)', margin: '0 -14px 12px' }} />
+          <p className="font-mono" style={{ fontSize: 10.5, color: 'var(--red)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 8 }}>
+            критические пробелы · {criticalGaps.length}
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+            {criticalGaps.map((g, i) => (
+              <span key={i} className="chip chip-missing" style={{ borderColor: 'var(--red)', color: 'var(--red)', fontWeight: 600 }}>{g}</span>
+            ))}
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ─── PRIORITY ────────────────────────────────────────────────────────────── */
+function Priority({ items, delay }) {
+  if (!items.length) return null;
+  return (
+    <div className={`card fade-up d${delay}`} style={{ margin: '0 14px', padding: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div className="section-icon" style={{ background: 'var(--accent-dim)' }}>
+          <span style={{ fontSize: 14 }}>↑</span>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          Что исправить
+        </span>
+        <span className="font-mono" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)', background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 5 }}>
+          {items.length}
+        </span>
+      </div>
+      <div style={{ height: 1, background: 'var(--border)', margin: '0 -14px 12px' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        {items.map((item, i) => (
+          <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span className="font-mono" style={{
+              color: 'var(--accent)', fontSize: 11, fontWeight: 700,
+              background: 'var(--accent-dim)', borderRadius: 4,
+              padding: '1px 6px', flexShrink: 0, marginTop: 2
+            }}>{i + 1}</span>
+            <span style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.55 }}>{item}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── APP ────────────────────────────────────────────────────────────────── */
 function App() {
   const [theme, setTheme] = useState('dark');
@@ -627,18 +710,24 @@ function App() {
 
         {/* ── SECTIONS ── */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+          <RejectionBlock
+            reasons={data.rejectionReasons}
+            criticalGaps={data.criticalGaps}
+            delay={3}
+          />
+          <Priority items={data.improvementPriority} delay={4} />
           <Section
             emoji="✦" title="Сильные стороны"
-            items={data.strongPoints} variant="good" delay={3}
+            items={data.strongPoints} variant="good" delay={5}
           />
           <Section
             emoji="△" title="Слабые стороны"
-            items={data.weakPoints} variant="bad" delay={4}
+            items={data.weakPoints} variant="bad" delay={6}
           />
           <Keywords
             found={data.keywords.found}
             missing={data.keywords.missing}
-            delay={5}
+            delay={7}
           />
         </div>
 
