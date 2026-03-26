@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>r·ai — Личный кабинет</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <style>
   :root {
     --bg:          #09090E;
@@ -581,7 +582,7 @@
   <!-- Пакеты -->
   <div class="section-title">Купить анализы</div>
   <div class="packages-grid">
-    <div class="package-card" onclick="buyPackage(1, 99)">
+    <div class="package-card" onclick="buyPackage('1', 99)">
       <div class="package-count">1</div>
       <div class="package-unit">анализ</div>
       <div class="package-price">99 ₽</div>
@@ -589,7 +590,7 @@
       <button class="btn-buy">Купить</button>
     </div>
 
-    <div class="package-card popular" onclick="buyPackage(5, 399)">
+    <div class="package-card popular" onclick="buyPackage('5', 399)">
       <span class="popular-badge">Хит</span>
       <div class="package-count">5</div>
       <div class="package-unit">анализов</div>
@@ -598,7 +599,7 @@
       <button class="btn-buy">Купить</button>
     </div>
 
-    <div class="package-card" onclick="buyPackage(10, 699)">
+    <div class="package-card" onclick="buyPackage('10', 699)">
       <div class="package-count">10</div>
       <div class="package-unit">анализов</div>
       <div class="package-price">699 ₽</div>
@@ -606,7 +607,7 @@
       <button class="btn-buy">Купить</button>
     </div>
 
-    <div class="package-card" onclick="buyPackage(999, 999)">
+    <div class="package-card" onclick="buyPackage('unlimited', 999)">
       <div class="package-count">∞</div>
       <div class="package-unit">в месяц</div>
       <div class="package-price">999 ₽</div>
@@ -623,30 +624,10 @@
       <span>Операция</span>
       <span style="text-align:right">Сумма</span>
     </div>
-    <div class="history-row">
-      <div class="history-date">26.03.2026 14:32</div>
-      <div class="history-type"><span class="type-dot dot-red"></span>Анализ резюме</div>
-      <div class="history-amount amount-minus">−99 ₽</div>
-    </div>
-    <div class="history-row">
-      <div class="history-date">25.03.2026 09:15</div>
-      <div class="history-type"><span class="type-dot dot-green"></span>Пополнение баланса</div>
-      <div class="history-amount amount-plus">+399 ₽</div>
-    </div>
-    <div class="history-row">
-      <div class="history-date">24.03.2026 18:47</div>
-      <div class="history-type"><span class="type-dot dot-gold"></span>Покупка пакета × 5</div>
-      <div class="history-amount amount-minus">−399 ₽</div>
-    </div>
-    <div class="history-row">
-      <div class="history-date">23.03.2026 11:20</div>
-      <div class="history-type"><span class="type-dot dot-red"></span>Анализ резюме</div>
-      <div class="history-amount amount-minus">−99 ₽</div>
-    </div>
-    <div class="history-row">
-      <div class="history-date">22.03.2026 16:05</div>
-      <div class="history-type"><span class="type-dot dot-green"></span>Пополнение баланса</div>
-      <div class="history-amount amount-plus">+1 000 ₽</div>
+    <div id="tx-list">
+      <div class="history-row">
+        <div class="history-date" style="color:var(--text-2);grid-column:1/-1;text-align:center;padding:20px 0">Операций пока нет</div>
+      </div>
     </div>
   </div>
 
@@ -677,8 +658,47 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  let balance = 350;
-  let analyses = 3;
+  // ── Загрузка данных из URL параметра ──
+  let userData = null;
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const d = params.get('d');
+    if (d) userData = JSON.parse(atob(d.replace(/-/g,'+').replace(/_/g,'/')));
+  } catch(e) {}
+
+  let balance = userData ? userData.balance : 0;
+  let analyses = userData ? userData.analyses_left : 0;
+
+  function renderUser() {
+    if (!userData) return;
+    // Имя и аватар
+    const name = userData.name || 'Пользователь';
+    document.querySelector('.user-name').textContent = name;
+    document.querySelector('.avatar').textContent = name[0].toUpperCase();
+    if (userData.username) document.querySelector('.user-handle').textContent = '@' + userData.username;
+    // Баланс
+    document.getElementById('balance').textContent = balance.toLocaleString('ru') + ' ₽';
+    // Анализы
+    const unlimited = userData.unlimited_until && new Date(userData.unlimited_until) > new Date();
+    document.getElementById('analyses-count').textContent = unlimited ? '∞' : analyses;
+    // История
+    if (userData.transactions && userData.transactions.length > 0) {
+      const tbody = document.getElementById('tx-list');
+      tbody.innerHTML = '';
+      userData.transactions.forEach(tx => {
+        const isPlus = tx.type === 'plus';
+        const dotClass = isPlus ? 'dot-green' : tx.type === 'gold' ? 'dot-gold' : 'dot-red';
+        tbody.innerHTML += `
+          <div class="history-row">
+            <div class="history-date">${tx.dt}</div>
+            <div class="history-type"><span class="type-dot ${dotClass}"></span>${tx.description}</div>
+            <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}">${isPlus ? '+' : '−'}${Math.abs(tx.amount)} ₽</div>
+          </div>`;
+      });
+    }
+  }
+
+  renderUser();
 
   function openModal() {
     document.getElementById('modal').classList.add('active');
@@ -692,31 +712,22 @@
     document.getElementById('custom-amount').value = amount;
   }
   function confirmTopup() {
-    const amount = parseInt(document.getElementById('custom-amount').value) || 0;
-    if (amount < 10) { showToast('Минимум 10 ₽'); return; }
-    balance += amount;
-    document.getElementById('balance').textContent = balance.toLocaleString('ru') + ' ₽';
+    showToast('Пополнение через бота: /topup');
     closeModal();
-    showToast('Баланс пополнен на ' + amount + ' ₽');
   }
-  function buyPackage(count, price) {
-    if (balance < price) { showToast('Недостаточно средств'); openModal(); return; }
-    balance -= price;
-    document.getElementById('balance').textContent = balance.toLocaleString('ru') + ' ₽';
-    if (count === 999) {
-      showToast('Безлимит на 30 дней активирован!');
-      document.getElementById('analyses-count').textContent = '∞';
+  function buyPackage(pkg, price) {
+    if (balance < price) { showToast('Недостаточно средств — пополни баланс'); openModal(); return; }
+    if (window.Telegram && window.Telegram.WebApp) {
+      window.Telegram.WebApp.sendData(JSON.stringify({action: 'buy', package: pkg}));
     } else {
-      analyses += count;
-      document.getElementById('analyses-count').textContent = analyses;
-      showToast('Куплено ' + count + (count === 1 ? ' анализ' : ' анализов'));
+      showToast('Открой через Telegram');
     }
   }
   function showToast(msg) {
     const t = document.getElementById('toast');
     t.textContent = msg;
     t.classList.add('show');
-    setTimeout(() => t.classList.remove('show'), 2500);
+    setTimeout(() => t.classList.remove('show'), 2800);
   }
   document.getElementById('modal').addEventListener('click', function(e) {
     if (e.target === this) closeModal();
