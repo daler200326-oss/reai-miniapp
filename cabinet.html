@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>r·ai — Личный кабинет</title>
+<style>
+  :root {
+    --bg:          #09090E;
+    --surface:     #111218;
+    --surface-2:   #1A1C27;
+    --surface-3:   #22253A;
+    --accent:      #F0A500;
+    --accent-dim:  rgba(240, 165, 0, 0.14);
+    --accent-glow: rgba(240, 165, 0, 0.25);
+    --green:       #10B981;
+    --green-bg:    rgba(16, 185, 129, 0.10);
+    --red:         #F43F5E;
+    --red-bg:      rgba(244, 63, 94, 0.10);
+    --text:        #EDF0FA;
+    --text-2:      #7A8399;
+    --text-3:      #4A5068;
+    --border:      rgba(255, 255, 255, 0.055);
+    --border-2:    rgba(255, 255, 255, 0.10);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Times New Roman', Times, serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Сетка фона как в index.html */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      linear-gradient(var(--border) 1px, transparent 1px),
+      linear-gradient(90deg, var(--border) 1px, transparent 1px);
+    background-size: 28px 28px;
+    mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, black 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  body::after {
+    content: '';
+    position: fixed;
+    top: 0; left: 50%;
+    transform: translateX(-50%);
+    width: 600px; height: 300px;
+    background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 20px 60px;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* ── Шапка ── */
+  header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 24px 0 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 32px;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    text-decoration: none;
+  }
+
+  .logo-icon {
+    width: 52px;
+    height: 52px;
+    border-radius: 12px;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 500;
+    color: #000;
+    letter-spacing: -0.5px;
+    flex-shrink: 0;
+  }
+
+  .logo-text {
+    font-family: 'Courier New', monospace;
+    font-size: 22px;
+    color: var(--text);
+    letter-spacing: -0.5px;
+  }
+
+  .user-info {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+
+  .avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--accent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    font-weight: 700;
+    color: #000;
+    flex-shrink: 0;
+  }
+
+  .user-name {
+    font-size: 17px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .user-handle {
+    font-size: 13px;
+    color: var(--text-2);
+    font-family: monospace;
+    margin-top: 2px;
+  }
+
+  .btn-logout {
+    background: transparent;
+    border: 1px solid var(--border-2);
+    color: var(--text);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-family: 'Times New Roman', serif;
+    font-size: 15px;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-logout:hover {
+    border-color: var(--red);
+    color: var(--red);
+  }
+
+  /* ── Баланс ── */
+  .balance-section {
+    background: var(--surface);
+    border: 1px solid rgba(240, 165, 0, 0.20);
+    border-radius: 16px;
+    padding: 28px 32px;
+    margin-bottom: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .balance-section::before {
+    content: '';
+    position: absolute;
+    top: -60%;
+    right: -5%;
+    width: 280px;
+    height: 280px;
+    background: radial-gradient(circle, rgba(240,165,0,0.08) 0%, transparent 70%);
+    pointer-events: none;
+  }
+
+  .balance-label {
+    font-family: monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-2);
+    margin-bottom: 8px;
+  }
+
+  .balance-amount {
+    font-size: 44px;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: -1px;
+    line-height: 1;
+    font-family: 'Courier New', monospace;
+  }
+
+  .balance-sub {
+    margin-top: 8px;
+    font-size: 13px;
+    color: var(--text);
+  }
+
+  .balance-sub span {
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .btn-topup {
+    background: var(--accent);
+    border: none;
+    color: #000;
+    padding: 13px 26px;
+    border-radius: 10px;
+    font-family: 'Times New Roman', serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+    position: relative;
+    z-index: 1;
+  }
+  .btn-topup:hover {
+    background: #ffc026;
+    transform: translateY(-1px);
+    box-shadow: 0 6px 24px rgba(240,165,0,0.35);
+  }
+
+  /* ── Заголовок секции ── */
+  .section-title {
+    font-family: monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text-3);
+    margin-bottom: 14px;
+  }
+
+  /* ── Пакеты ── */
+  .packages-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-bottom: 36px;
+  }
+
+  @media (max-width: 680px) {
+    .packages-grid { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  .package-card {
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: 14px;
+    padding: 20px 16px;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .package-card:hover {
+    border-color: rgba(240,165,0,0.4);
+    background: var(--surface-2);
+    transform: translateY(-3px);
+    box-shadow: 0 12px 32px rgba(240,165,0,0.12);
+  }
+
+  .package-card.popular {
+    border-color: rgba(240,165,0,0.35);
+    background: var(--surface-2);
+  }
+
+  .popular-badge {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    background: var(--accent);
+    color: #000;
+    font-family: monospace;
+    font-size: 9px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    padding: 2px 7px;
+    border-radius: 20px;
+    text-transform: uppercase;
+  }
+
+  .package-count {
+    font-size: 36px;
+    font-weight: 700;
+    color: var(--text);
+    line-height: 1;
+    font-family: 'Courier New', monospace;
+    margin-bottom: 2px;
+  }
+
+  .package-unit {
+    font-size: 12px;
+    color: var(--text-2);
+    margin-bottom: 14px;
+  }
+
+  .package-price {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--accent);
+    font-family: 'Courier New', monospace;
+  }
+
+  .package-per {
+    font-size: 11px;
+    color: var(--text-2);
+    margin-top: 3px;
+    font-family: monospace;
+  }
+
+  .package-per .save { color: var(--green); font-weight: 600; }
+
+  .btn-buy {
+    margin-top: 14px;
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    color: #000;
+    padding: 10px;
+    border-radius: 7px;
+    font-family: 'Times New Roman', serif;
+    font-size: 14px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    box-shadow: 0 4px 14px rgba(240,165,0,0.25);
+  }
+  .btn-buy:hover {
+    background: #ffc026;
+    box-shadow: 0 6px 20px rgba(240,165,0,0.45);
+    transform: translateY(-1px);
+  }
+
+  /* ── История ── */
+  .history-table {
+    background: var(--surface);
+    border: 1px solid var(--border-2);
+    border-radius: 14px;
+    overflow: hidden;
+  }
+
+  .history-header {
+    display: grid;
+    grid-template-columns: 150px 1fr 110px;
+    padding: 12px 24px;
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+    font-family: monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text-2);
+  }
+
+  .history-row {
+    display: grid;
+    grid-template-columns: 150px 1fr 110px;
+    padding: 14px 24px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background 0.15s;
+  }
+  .history-row:last-child { border-bottom: none; }
+  .history-row:hover { background: var(--surface-2); }
+
+  .history-date {
+    font-family: monospace;
+    font-size: 12px;
+    color: var(--text-2);
+  }
+
+  .history-type {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    font-size: 14px;
+    color: var(--text);
+  }
+
+  .type-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .dot-green { background: var(--green); box-shadow: 0 0 6px var(--green); }
+  .dot-red   { background: var(--red);   box-shadow: 0 0 6px var(--red); }
+  .dot-gold  { background: var(--accent); box-shadow: 0 0 6px var(--accent); }
+
+  .history-amount {
+    font-family: 'Courier New', monospace;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: right;
+  }
+  .amount-plus  { color: var(--green); }
+  .amount-minus { color: var(--red); }
+
+  /* ── Модал ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.75);
+    backdrop-filter: blur(6px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  .modal-overlay.active { display: flex; }
+
+  .modal {
+    background: var(--surface);
+    border: 1px solid rgba(240,165,0,0.20);
+    border-radius: 18px;
+    padding: 32px;
+    width: 360px;
+    max-width: 90vw;
+    position: relative;
+    animation: modalIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes modalIn {
+    from { opacity: 0; transform: scale(0.92) translateY(16px); }
+    to   { opacity: 1; transform: scale(1) translateY(0); }
+  }
+
+  .modal-logo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+  }
+
+  .modal-title {
+    font-size: 26px;
+    font-weight: 700;
+    margin-bottom: 8px;
+  }
+
+  .modal-sub {
+    font-size: 15px;
+    color: var(--text-2);
+    margin-bottom: 24px;
+  }
+
+  .amount-options {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 16px;
+  }
+
+  .amount-opt {
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    padding: 13px;
+    text-align: center;
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--text);
+  }
+  .amount-opt:hover, .amount-opt.selected {
+    border-color: var(--accent);
+    background: var(--accent-dim);
+    color: var(--accent);
+  }
+
+  .modal-input {
+    width: 100%;
+    background: var(--surface-2);
+    border: 1px solid var(--border-2);
+    border-radius: 8px;
+    padding: 12px 14px;
+    color: var(--text);
+    font-family: 'Courier New', monospace;
+    font-size: 15px;
+    margin-bottom: 18px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+  .modal-input:focus { border-color: var(--accent); }
+
+  .btn-confirm {
+    width: 100%;
+    background: var(--accent);
+    border: none;
+    color: #000;
+    padding: 14px;
+    border-radius: 10px;
+    font-family: 'Times New Roman', serif;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-confirm:hover {
+    background: #ffc026;
+    box-shadow: 0 6px 24px rgba(240,165,0,0.35);
+  }
+
+  .modal-close {
+    position: absolute;
+    top: 14px; right: 16px;
+    background: transparent;
+    border: none;
+    color: var(--text-3);
+    font-size: 18px;
+    cursor: pointer;
+    transition: color 0.2s;
+  }
+  .modal-close:hover { color: var(--text); }
+
+  /* Toast */
+  .toast {
+    position: fixed;
+    bottom: 28px;
+    left: 50%;
+    transform: translateX(-50%) translateY(70px);
+    background: var(--surface-2);
+    border: 1px solid rgba(240,165,0,0.25);
+    border-radius: 10px;
+    padding: 12px 22px;
+    font-family: monospace;
+    font-size: 13px;
+    color: var(--accent);
+    transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+    z-index: 200;
+    white-space: nowrap;
+  }
+  .toast.show { transform: translateX(-50%) translateY(0); }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Шапка -->
+  <header>
+    <div class="logo">
+      <div class="logo-icon">r·ai</div>
+      <span class="logo-text">ResumeAI</span>
+    </div>
+    <div class="user-info">
+      <div class="avatar">Д</div>
+      <div>
+        <div class="user-name">Далер</div>
+        <div class="user-handle">@ogbanf</div>
+      </div>
+    </div>
+    <button class="btn-logout" onclick="showToast('До свидания!')">Выйти</button>
+  </header>
+
+  <!-- Баланс -->
+  <div class="balance-section">
+    <div>
+      <div class="balance-label">Баланс</div>
+      <div class="balance-amount" id="balance">350 ₽</div>
+      <div class="balance-sub">Доступно анализов: <span id="analyses-count">3</span></div>
+    </div>
+    <button class="btn-topup" onclick="openModal()">+ Пополнить</button>
+  </div>
+
+  <!-- Пакеты -->
+  <div class="section-title">Купить анализы</div>
+  <div class="packages-grid">
+    <div class="package-card" onclick="buyPackage(1, 99)">
+      <div class="package-count">1</div>
+      <div class="package-unit">анализ</div>
+      <div class="package-price">99 ₽</div>
+      <div class="package-per">99 ₽ / шт</div>
+      <button class="btn-buy">Купить</button>
+    </div>
+
+    <div class="package-card popular" onclick="buyPackage(5, 399)">
+      <span class="popular-badge">Хит</span>
+      <div class="package-count">5</div>
+      <div class="package-unit">анализов</div>
+      <div class="package-price">399 ₽</div>
+      <div class="package-per"><span class="save">−19%</span> · 80 ₽/шт</div>
+      <button class="btn-buy">Купить</button>
+    </div>
+
+    <div class="package-card" onclick="buyPackage(10, 699)">
+      <div class="package-count">10</div>
+      <div class="package-unit">анализов</div>
+      <div class="package-price">699 ₽</div>
+      <div class="package-per"><span class="save">−29%</span> · 70 ₽/шт</div>
+      <button class="btn-buy">Купить</button>
+    </div>
+
+    <div class="package-card" onclick="buyPackage(999, 999)">
+      <div class="package-count">∞</div>
+      <div class="package-unit">в месяц</div>
+      <div class="package-price">999 ₽</div>
+      <div class="package-per">безлимит · 30 дней</div>
+      <button class="btn-buy">Купить</button>
+    </div>
+  </div>
+
+  <!-- История -->
+  <div class="section-title">История операций</div>
+  <div class="history-table">
+    <div class="history-header">
+      <span>Дата</span>
+      <span>Операция</span>
+      <span style="text-align:right">Сумма</span>
+    </div>
+    <div class="history-row">
+      <div class="history-date">26.03.2026 14:32</div>
+      <div class="history-type"><span class="type-dot dot-red"></span>Анализ резюме</div>
+      <div class="history-amount amount-minus">−99 ₽</div>
+    </div>
+    <div class="history-row">
+      <div class="history-date">25.03.2026 09:15</div>
+      <div class="history-type"><span class="type-dot dot-green"></span>Пополнение баланса</div>
+      <div class="history-amount amount-plus">+399 ₽</div>
+    </div>
+    <div class="history-row">
+      <div class="history-date">24.03.2026 18:47</div>
+      <div class="history-type"><span class="type-dot dot-gold"></span>Покупка пакета × 5</div>
+      <div class="history-amount amount-minus">−399 ₽</div>
+    </div>
+    <div class="history-row">
+      <div class="history-date">23.03.2026 11:20</div>
+      <div class="history-type"><span class="type-dot dot-red"></span>Анализ резюме</div>
+      <div class="history-amount amount-minus">−99 ₽</div>
+    </div>
+    <div class="history-row">
+      <div class="history-date">22.03.2026 16:05</div>
+      <div class="history-type"><span class="type-dot dot-green"></span>Пополнение баланса</div>
+      <div class="history-amount amount-plus">+1 000 ₽</div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Модал -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <button class="modal-close" onclick="closeModal()">✕</button>
+    <div class="modal-logo">
+      <div class="logo-icon" style="width:30px;height:30px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:11px;color:#000">r·ai</div>
+    </div>
+    <div class="modal-title">Пополнить баланс</div>
+    <div class="modal-sub">Выберите сумму или введите свою</div>
+    <div class="amount-options">
+      <div class="amount-opt" onclick="selectAmount(this,100)">100 ₽</div>
+      <div class="amount-opt" onclick="selectAmount(this,300)">300 ₽</div>
+      <div class="amount-opt selected" onclick="selectAmount(this,500)">500 ₽</div>
+      <div class="amount-opt" onclick="selectAmount(this,1000)">1 000 ₽</div>
+      <div class="amount-opt" onclick="selectAmount(this,2000)">2 000 ₽</div>
+      <div class="amount-opt" onclick="selectAmount(this,5000)">5 000 ₽</div>
+    </div>
+    <input class="modal-input" type="number" id="custom-amount" value="500" placeholder="Своя сумма, ₽">
+    <button class="btn-confirm" onclick="confirmTopup()">Перейти к оплате →</button>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+  let balance = 350;
+  let analyses = 3;
+
+  function openModal() {
+    document.getElementById('modal').classList.add('active');
+  }
+  function closeModal() {
+    document.getElementById('modal').classList.remove('active');
+  }
+  function selectAmount(el, amount) {
+    document.querySelectorAll('.amount-opt').forEach(e => e.classList.remove('selected'));
+    el.classList.add('selected');
+    document.getElementById('custom-amount').value = amount;
+  }
+  function confirmTopup() {
+    const amount = parseInt(document.getElementById('custom-amount').value) || 0;
+    if (amount < 10) { showToast('Минимум 10 ₽'); return; }
+    balance += amount;
+    document.getElementById('balance').textContent = balance.toLocaleString('ru') + ' ₽';
+    closeModal();
+    showToast('Баланс пополнен на ' + amount + ' ₽');
+  }
+  function buyPackage(count, price) {
+    if (balance < price) { showToast('Недостаточно средств'); openModal(); return; }
+    balance -= price;
+    document.getElementById('balance').textContent = balance.toLocaleString('ru') + ' ₽';
+    if (count === 999) {
+      showToast('Безлимит на 30 дней активирован!');
+      document.getElementById('analyses-count').textContent = '∞';
+    } else {
+      analyses += count;
+      document.getElementById('analyses-count').textContent = analyses;
+      showToast('Куплено ' + count + (count === 1 ? ' анализ' : ' анализов'));
+    }
+  }
+  function showToast(msg) {
+    const t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('show');
+    setTimeout(() => t.classList.remove('show'), 2500);
+  }
+  document.getElementById('modal').addEventListener('click', function(e) {
+    if (e.target === this) closeModal();
+  });
+</script>
+</body>
+</html>
