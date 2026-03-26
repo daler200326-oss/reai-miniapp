@@ -566,7 +566,7 @@
         <div class="user-handle">@ogbanf</div>
       </div>
     </div>
-    <button class="btn-logout" onclick="showToast('До свидания!')">Выйти</button>
+    <button class="btn-logout" onclick="if(window.Telegram&&window.Telegram.WebApp){window.Telegram.WebApp.close()}else{window.close()}">Выйти</button>
   </header>
 
   <!-- Баланс -->
