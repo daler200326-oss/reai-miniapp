@@ -648,7 +648,7 @@
     <div class="amount-options">
       <div class="amount-opt" onclick="selectAmount(this,100)">100 ₽</div>
       <div class="amount-opt" onclick="selectAmount(this,300)">300 ₽</div>
-      <div class="amount-opt selected" onclick="selectAmount(this,500)">500 ₽</div>
+      <div class="amount-opt" onclick="selectAmount(this,500)">500 ₽</div>
       <div class="amount-opt" onclick="selectAmount(this,1000)">1 000 ₽</div>
       <div class="amount-opt" onclick="selectAmount(this,2000)">2 000 ₽</div>
       <div class="amount-opt" onclick="selectAmount(this,5000)">5 000 ₽</div>
@@ -709,8 +709,8 @@
   renderUser();
 
   function openModal(amount) {
-    if (amount !== undefined) document.getElementById('custom-amount').value = amount;
-    else if (!document.getElementById('custom-amount').value) document.getElementById('custom-amount').value = 500;
+    const input = document.getElementById('custom-amount');
+    input.value = (amount !== undefined) ? amount : 500;
     document.getElementById('modal').classList.add('active');
   }
   function closeModal() {
