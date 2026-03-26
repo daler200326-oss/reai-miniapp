@@ -725,10 +725,10 @@
   }
   function buyPackage(pkg, price) {
     if (balance < price) {
-      openModal();
       const needed = price - balance;
       document.getElementById('custom-amount').value = needed;
       document.querySelectorAll('.amount-opt').forEach(e => e.classList.remove('selected'));
+      openModal();
       showToast('Не хватает ' + needed + ' ₽');
       return;
     }
