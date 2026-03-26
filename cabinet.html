@@ -663,7 +663,12 @@
   try {
     const params = new URLSearchParams(window.location.search);
     const d = params.get('d');
-    if (d) userData = JSON.parse(atob(d.replace(/-/g,'+').replace(/_/g,'/')));
+    if (d) {
+      const binary = atob(d.replace(/-/g,'+').replace(/_/g,'/'));
+      const bytes = new Uint8Array(binary.length);
+      for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+      userData = JSON.parse(new TextDecoder('utf-8').decode(bytes));
+    }
   } catch(e) {}
 
   let balance = userData ? userData.balance : 0;
