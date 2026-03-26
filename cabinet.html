@@ -724,7 +724,14 @@
     closeModal();
   }
   function buyPackage(pkg, price) {
-    if (balance < price) { showToast('Недостаточно средств — пополни баланс'); openModal(); return; }
+    if (balance < price) {
+      openModal();
+      const needed = price - balance;
+      document.getElementById('custom-amount').value = needed;
+      document.querySelectorAll('.amount-opt').forEach(e => e.classList.remove('selected'));
+      showToast('Не хватает ' + needed + ' ₽');
+      return;
+    }
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.sendData(JSON.stringify({action: 'buy', package: pkg}));
     } else {
