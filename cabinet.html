@@ -370,8 +370,8 @@
 
   .history-header {
     display: grid;
-    grid-template-columns: 150px 1fr 110px;
-    padding: 12px 24px;
+    grid-template-columns: 130px 1fr auto;
+    padding: 12px 16px;
     background: var(--surface-2);
     border-bottom: 1px solid var(--border);
     font-family: monospace;
@@ -383,8 +383,8 @@
 
   .history-row {
     display: grid;
-    grid-template-columns: 150px 1fr 110px;
-    padding: 14px 24px;
+    grid-template-columns: 130px 1fr auto;
+    padding: 14px 16px;
     border-bottom: 1px solid var(--border);
     align-items: center;
     transition: background 0.15s;
@@ -421,6 +421,8 @@
     font-size: 14px;
     font-weight: 600;
     text-align: right;
+    white-space: nowrap;
+    padding-left: 8px;
   }
   .amount-plus  { color: var(--green); }
   .amount-minus { color: var(--red); }
