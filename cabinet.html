@@ -713,13 +713,14 @@
     if (userData.transactions && userData.transactions.length > 0) {
       const tbody = document.getElementById('tx-list');
       tbody.innerHTML = '';
+      const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
       userData.transactions.forEach(tx => {
         const isPlus = tx.type === 'plus';
         const dotClass = isPlus ? 'dot-green' : tx.type === 'gold' ? 'dot-gold' : 'dot-red';
         tbody.innerHTML += `
           <div class="history-row">
-            <div class="history-date">${tx.dt}</div>
-            <div class="history-type"><span class="type-dot ${dotClass}"></span>${tx.description}</div>
+            <div class="history-date">${esc(tx.dt)}</div>
+            <div class="history-type"><span class="type-dot ${dotClass}"></span>${esc(tx.description)}</div>
             <div class="history-amount ${isPlus ? 'amount-plus' : 'amount-minus'}">${isPlus ? '+' : '−'}${Math.abs(tx.amount)} ₽</div>
           </div>`;
       });
