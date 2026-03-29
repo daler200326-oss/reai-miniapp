@@ -589,6 +589,39 @@ function Keywords({ found, missing, delay }) {
   );
 }
 
+/* ─── RECOMMENDATIONS BLOCK (passing resumes) ───────────────────────────── */
+function RecommendationsBlock({ items, delay }) {
+  if (!items.length) return null;
+  return (
+    <div className={`card fade-up d${delay}`} style={{ margin: '0 14px', padding: '14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 12 }}>
+        <div className="section-icon" style={{ background: 'var(--green-bg, rgba(52,211,153,0.12))' }}>
+          <span style={{ fontSize: 14 }}>✦</span>
+        </div>
+        <span style={{ fontSize: 14, fontWeight: 700, letterSpacing: '-0.01em' }}>
+          Рекомендации
+        </span>
+        <span className="font-mono" style={{ marginLeft: 'auto', fontSize: 11, color: 'var(--text-3)', background: 'var(--surface-2)', padding: '2px 8px', borderRadius: 5 }}>
+          {items.length}
+        </span>
+      </div>
+      <div style={{ height: 1, background: 'var(--border)', margin: '0 -14px 12px' }} />
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
+        {items.map((item, i) => (
+          <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+            <span className="font-mono" style={{
+              color: 'var(--accent)', fontSize: 11, fontWeight: 700,
+              background: 'var(--accent-dim)', borderRadius: 4,
+              padding: '1px 6px', flexShrink: 0, marginTop: 2
+            }}>{i + 1}</span>
+            <span style={{ fontSize: 15, color: 'var(--text)', lineHeight: 1.55 }}>{item}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 /* ─── REJECTION BLOCK ────────────────────────────────────────────────────── */
 function RejectionBlock({ reasons, criticalGaps, delay }) {
   if (!reasons.length && !criticalGaps.length) return null;
@@ -824,11 +857,21 @@ function ReportView({ data, onRewrite, onNew }) {
 
       {/* Sections */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-        <RejectionBlock reasons={d.rejectionReasons} criticalGaps={d.criticalGaps} delay={3} />
-        <Priority items={d.improvementPriority} delay={4} />
-        <Section emoji="✦" title="Сильные стороны" items={d.strongPoints} variant="good" delay={5} />
-        <Section emoji="△" title="Слабые стороны"  items={d.weakPoints}  variant="bad"  delay={6} />
-        <Keywords found={d.keywords.found} missing={d.keywords.missing} delay={7} />
+        {d.score >= 75 ? (
+          <>
+            <RecommendationsBlock items={d.improvementPriority} delay={3} />
+            <Section emoji="✦" title="Сильные стороны" items={d.strongPoints} variant="good" delay={4} />
+            <Keywords found={d.keywords.found} missing={d.keywords.missing} delay={5} />
+          </>
+        ) : (
+          <>
+            <RejectionBlock reasons={d.rejectionReasons} criticalGaps={d.criticalGaps} delay={3} />
+            <Priority items={d.improvementPriority} delay={4} />
+            <Section emoji="✦" title="Сильные стороны" items={d.strongPoints} variant="good" delay={5} />
+            <Section emoji="△" title="Слабые стороны"  items={d.weakPoints}  variant="bad"  delay={6} />
+            <Keywords found={d.keywords.found} missing={d.keywords.missing} delay={7} />
+          </>
+        )}
       </div>
 
       {/* CTA */}
