@@ -597,17 +597,16 @@
   <!-- Баланс -->
   <div class="balance-section">
     <div>
-      <div class="balance-label">Баланс</div>
-      <div class="balance-amount" id="balance">350 ₽</div>
-      <div class="balance-sub">Доступно анализов: <span id="analyses-count">3</span></div>
+      <div class="balance-label">Доступно анализов</div>
+      <div class="balance-amount" id="analyses-count">3</div>
+      <div class="balance-sub" id="unlimited-label" style="display:none">Безлимит активен</div>
     </div>
-    <button class="btn-topup" onclick="openModal(500)">+ Пополнить</button>
   </div>
 
   <!-- Пакеты -->
   <div class="section-title">Купить анализы</div>
   <div class="packages-grid">
-    <div class="package-card" onclick="buyPackage('1', 99)">
+    <div class="package-card" onclick="buyPackage('1')">
       <div class="package-count">1</div>
       <div class="package-unit">анализ</div>
       <div class="package-price">99 ₽</div>
@@ -615,7 +614,7 @@
       <button class="btn-buy">Купить</button>
     </div>
 
-    <div class="package-card popular" onclick="buyPackage('5', 399)">
+    <div class="package-card popular" onclick="buyPackage('5')">
       <span class="popular-badge">Хит</span>
       <div class="package-count">5</div>
       <div class="package-unit">анализов</div>
@@ -624,7 +623,7 @@
       <button class="btn-buy">Купить</button>
     </div>
 
-    <div class="package-card" onclick="buyPackage('10', 699)">
+    <div class="package-card" onclick="buyPackage('10')">
       <div class="package-count">10</div>
       <div class="package-unit">анализов</div>
       <div class="package-price">699 ₽</div>
@@ -632,7 +631,7 @@
       <button class="btn-buy">Купить</button>
     </div>
 
-    <div class="package-card" onclick="buyPackage('unlimited', 999)">
+    <div class="package-card" onclick="buyPackage('unlimited')">
       <div class="package-count">∞</div>
       <div class="package-unit">в месяц</div>
       <div class="package-price">999 ₽</div>
@@ -658,27 +657,6 @@
 
 </div>
 
-<!-- Модал -->
-<div class="modal-overlay" id="modal">
-  <div class="modal">
-    <button class="modal-close" onclick="closeModal()">✕</button>
-    <div class="modal-logo">
-      <div class="logo-icon" style="width:30px;height:30px;border-radius:7px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-family:'Courier New',monospace;font-size:11px;color:#000">r·ai</div>
-    </div>
-    <div class="modal-title">Пополнить баланс</div>
-    <div class="modal-sub">Выберите сумму или введите свою</div>
-    <div class="amount-options">
-      <div class="amount-opt" onclick="selectAmount(this,100)">100 ₽</div>
-      <div class="amount-opt" onclick="selectAmount(this,300)">300 ₽</div>
-      <div class="amount-opt" onclick="selectAmount(this,500)">500 ₽</div>
-      <div class="amount-opt" onclick="selectAmount(this,1000)">1 000 ₽</div>
-      <div class="amount-opt" onclick="selectAmount(this,2000)">2 000 ₽</div>
-      <div class="amount-opt" onclick="selectAmount(this,5000)">5 000 ₽</div>
-    </div>
-    <input class="modal-input" type="text" inputmode="numeric" id="custom-amount" placeholder="Своя сумма, ₽" autocomplete="off">
-    <button class="btn-confirm" onclick="confirmTopup()">Перейти к оплате →</button>
-  </div>
-</div>
 
 <div class="toast" id="toast"></div>
 
@@ -706,11 +684,12 @@
     document.querySelector('.user-name').textContent = name;
     document.querySelector('.avatar').textContent = name[0].toUpperCase();
     if (userData.username) document.querySelector('.user-handle').textContent = '@' + userData.username;
-    // Баланс
-    document.getElementById('balance').textContent = balance.toLocaleString('ru') + ' ₽';
-    // Анализы
+    // Анализы / безлимит
     const unlimited = userData.unlimited_until && new Date(userData.unlimited_until) > new Date();
     document.getElementById('analyses-count').textContent = unlimited ? '∞' : analyses;
+    if (unlimited) {
+      document.getElementById('unlimited-label').style.display = '';
+    }
     // История
     if (userData.transactions && userData.transactions.length > 0) {
       const tbody = document.getElementById('tx-list');
@@ -731,31 +710,7 @@
 
   renderUser();
 
-  function openModal(amount) {
-    const input = document.getElementById('custom-amount');
-    input.value = (amount !== undefined) ? amount : 500;
-    document.getElementById('modal').classList.add('active');
-  }
-  function closeModal() {
-    document.getElementById('modal').classList.remove('active');
-  }
-  function selectAmount(el, amount) {
-    document.querySelectorAll('.amount-opt').forEach(e => e.classList.remove('selected'));
-    el.classList.add('selected');
-    document.getElementById('custom-amount').value = amount;
-  }
-  function confirmTopup() {
-    showToast('Пополнение через бота: /topup');
-    closeModal();
-  }
-  function buyPackage(pkg, price) {
-    if (balance < price) {
-      const needed = price - balance;
-      document.querySelectorAll('.amount-opt').forEach(e => e.classList.remove('selected'));
-      openModal(needed);
-      showToast('Не хватает ' + needed + ' ₽');
-      return;
-    }
+  function buyPackage(pkg) {
     if (window.Telegram && window.Telegram.WebApp) {
       window.Telegram.WebApp.sendData(JSON.stringify({action: 'buy', package: pkg}));
     } else {
@@ -768,9 +723,6 @@
     t.classList.add('show');
     setTimeout(() => t.classList.remove('show'), 2800);
   }
-  document.getElementById('modal').addEventListener('click', function(e) {
-    if (e.target === this) closeModal();
-  });
 </script>
 </body>
 </html>
